@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, Pressable, Vibration, Animated, Modal, Button } from 'react-native';
+import { StyleSheet, Text, View, Pressable, Vibration, Animated, Modal, Button, PanResponder } from 'react-native';
 import { Audio } from 'expo-av';
 import { Gyroscope } from 'expo-sensors';
 
@@ -8,8 +8,8 @@ export default function App() {
     const [happiness, setHappiness] = useState(100);
     const [hunger, setHunger] = useState(0);
     const [cleanliness, setCleanliness] = useState(100);
+
     const [mood, setMood] = useState('happy');
-    const [gyroscopeData, setGyroscopeData] = useState({});
     const [animation] = useState(new Animated.Value(0));
     const [gameOver, setGameOver] = useState(false);
     const [gameOverReason, setGameOverReason] = useState('');
@@ -18,7 +18,7 @@ export default function App() {
         const loadSound = async () => {
             try {
                 const { sound } = await Audio.Sound.createAsync(
-                    require('./assets/happy_sound.mp3')
+                    require('./assets/feed_sound.mp3')
                 );
                 setSound(sound);
             } catch (error) {
@@ -32,16 +32,6 @@ export default function App() {
             if (sound) {
                 sound.unloadAsync();
             }
-        };
-    }, []);
-
-    useEffect(() => {
-        const subscription = Gyroscope.addListener((gyroscopeData) => {
-            setGyroscopeData(gyroscopeData);
-        });
-
-        return () => {
-            subscription.remove();
         };
     }, []);
 
@@ -131,6 +121,20 @@ export default function App() {
         setGameOverReason('');
     };
 
+    // PanResponder for swipe gesture
+    const panResponder = React.useRef(
+        PanResponder.create({
+            onStartShouldSetPanResponder: () => true,
+            onPanResponderRelease: (evt, gestureState) => {
+                // Check if the swipe occurred over the pet image
+                if (gestureState.moveX > 0 && gestureState.moveY > 0) {
+                    // Increase happiness when swiping over the pet image
+                    setHappiness((prevHappiness) => Math.min(100, prevHappiness + 5));
+                }
+            },
+        })
+    ).current;
+
     return (
         <View style={styles.container}>
             <Text style={styles.happinessText}>Pet Happiness: {happiness}</Text>
@@ -181,6 +185,7 @@ export default function App() {
                         ],
                     },
                 ]}
+                {...panResponder.panHandlers} // Add panHandlers to the pet image
             />
         </View>
     );
